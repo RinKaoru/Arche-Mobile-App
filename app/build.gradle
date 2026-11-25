@@ -1,0 +1,52 @@
+plugins { id "com.android.application" }
+
+// Version : fichier version.properties incrémenté par build.sh à chaque publication
+def vp = new Properties(); vp.load(new FileInputStream(rootProject.file("version.properties")))
+
+android {
+    namespace "app.arche.nas"
+    compileSdk 35
+    buildToolsVersion "35.0.0"
+    defaultConfig {
+        applicationId "app.arche.nas"
+        minSdk 26
+        targetSdk 34          // appli installée hors Play Store : on garde le comportement d'affichage d'Android 14
+        versionCode vp.code.toInteger()
+        versionName vp.name
+        manifestPlaceholders = [archeHost: vp.host]
+        buildConfigField "String", "PUBLIC_HOST", "\"${vp.host}\""
+        buildConfigField "String", "LAN_HOST", "\"${vp.lan}\""
+        buildConfigField "int", "PORT", "443"
+    }
+    signingConfigs {
+        release {
+            // la clé de signature n'est PAS dans le dépôt : chemin surchargeable par ARCHE_SIGNING (fichier .properties)
+            def f = rootProject.file(System.getenv("ARCHE_SIGNING") ?: "signing.properties")
+            if (f.exists()) {
+                def kp = new Properties(); kp.load(new FileInputStream(f))
+                storeFile file(kp.storeFile); storePassword kp.storePassword; keyAlias kp.keyAlias; keyPassword kp.keyPassword
+            }
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.release }
+        // variante de test : parle à un faux serveur local (certificat de test), jamais publiée
+        qa {
+            initWith release
+            applicationIdSuffix ".qa"
+            buildConfigField "String", "PUBLIC_HOST", "\"archetest.local\""
+            buildConfigField "String", "LAN_HOST", "\"10.0.2.2\""
+            buildConfigField "int", "PORT", "8999"
+            matchingFallbacks = ["release"]
+        }
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
+
+dependencies {
+    implementation "androidx.work:work-runtime:2.9.1"
+    implementation "androidx.core:core:1.13.1"
+    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+}

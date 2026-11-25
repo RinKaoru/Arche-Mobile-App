@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- tout en HTTPS (à la maison aussi : connexion directe au NAS avec son vrai certificat) -->
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
